@@ -1,6 +1,6 @@
 ---
 title: "R functions"
-#author: "Insert Name"
+#author: "Cameron"
 date: "Math 241, Week 3"
 output:
   pdf_document
@@ -37,12 +37,20 @@ for(l in libs){
 ## Problem 1 (Medium): 
 
 Write a function called `count_name` that, when given a name as an argument, returns the total number of births by year from the `babynames` data frame in the `babynames` package that match that name. The function should return one row per year that matches (and generate an error message if there are no matches). Run the function once with the argument Ezekiel and once with Ezze.
+```{r}
+babynames
+```
 
 ```{r, eval= FALSE}
+
 data(babynames) # this will explicitly ask R to load the babynames dataset to your environment
-count_name <- function(name){
-  # your code here
+count_name <- function(name.){
+  filter(babynames, name == name.) %>% group_by(year) %>% summarise (n = sum(n) ) 
 }
+
+count_name("Mary")
+
+
 ```
 
 
