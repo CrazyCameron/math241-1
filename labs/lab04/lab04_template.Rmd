@@ -1,6 +1,6 @@
 ---
 title: "Lab 4"
-#author: "Insert Name"
+author: "Cameron Adams"
 date: "Math 241, Week 4"
 output:
   pdf_document
@@ -18,5 +18,196 @@ library(tidyverse)
 
 ### Problem 1: COVID survey - interpretation
 
+Off the bat one of the biggest differences in opinions is correlated with if the
+medical and nursing students have had or not had the Covid vaccine. If the students had the Vaccine, they more likely to agree or strongly agree making their data more skewed right. However if a student hadn't had the vaccine, they would often answer with Neither Agree Nor Disagree. The exception to this was when asked if they were concerned about the side effects of the vaccine, where vaccinated students answered on average Neither Agree Nor Disagree and Non-vacced students agreed more. Another interesting question was when asked if the students would recommend the vaccine to family and friends. Vaccinated students overwhelmingly agreed with at least 80% of participants answering strongly agree. whereas the non-vaccinated students ranged from all answered averaging Neither Agree Nor Disagree. One thing that's important to take into account however is the All category. this suggests that overall there are much less non vaccinated students than vaccinated students since the data is still skeywed right or much more in line with the vaccinated students.
+
+There was also a simular correlation with if the students have had the Flu Vaccine. Students that took the Flue vaccine answered similar to students who had had the covid vaccine, showing similar or identical statistics. Students who didn't have the flu vaccine did seem to trust it a bit more than the Covid vaccine but did show simular trends as the question before.  
+
+Some other interesting shorter statistics were that binary gender had no effect on the answer with the differences only coming from non-binary or preferred not to answer responses. 
+
+
+
 
 ### Problem 2: COVID survey - reconstruct
+
+
+### prob 2.1
+```{r}
+survey_data <- read.csv("data/covid-survey.csv", skip = 1)
+head(survey_data)
+dim(survey_data)
+
+```
+###Prob 2.2
+
+```{r}
+# Filter out rows where all values except "response_id" are NA
+cleaned_data <- survey_data %>%
+  filter(!is.na(exp_profession) &
+         !is.na(exp_flu_vax) &
+         !is.na(exp_gender) &
+         !is.na(exp_race) &
+         !is.na(exp_ethnicity) &
+         !is.na(exp_age_bin) &
+         !is.na(exp_already_vax) &
+         !is.na(resp_safety) &
+         !is.na(resp_confidence_science) &
+         !is.na(resp_concern_safety) &
+         !is.na(resp_feel_safe_at_work) &
+         !is.na(resp_will_recommend))
+
+head(cleaned_data)
+dim(cleaned_data)
+```
+
+#2.3
+
+```{r}
+
+# Relabel survey response values
+cleaned_data2 <- cleaned_data %>%
+  mutate(exp_already_vax = ifelse(exp_already_vax == 0, "No", "Yes"),
+         exp_flu_vax = ifelse(exp_flu_vax == 0, "No", "Yes"),
+         exp_profession = ifelse(exp_profession == 0, "Medical", "Nursing"),
+         exp_gender = case_when(
+           exp_gender == 0 ~ "Male",
+           exp_gender == 1 ~ "Female",
+           exp_gender == 3 ~ "Non-binary third gender",
+           exp_gender == 4 ~ "Prefer not to say"
+         ),
+         exp_race = case_when(
+           exp_race == 1 ~ "American Indian / Alaskan Native",
+           exp_race == 2 ~ "Asian",
+           exp_race == 3 ~ "Black / African American",
+           exp_race == 4 ~ "Native Hawaiian / Other Pacific Islander",
+           exp_race == 5 ~ "White"
+         ),
+         exp_ethnicity = ifelse(exp_ethnicity == 1, "Hispanic / Latino", "Non-Hispanic/Non-Latino"),
+         exp_age_bin = case_when(
+          exp_age_bin == 0 ~ "<20",
+           exp_age_bin == 20 ~ "21-25",
+           exp_age_bin == 25 ~ "26-30",
+           exp_age_bin == 30 ~ ">30",
+))
+head(cleaned_data2)
+dim(cleaned_data2)
+
+```
+
+###2.4
+
+```{r}
+covid_survey_longer <- cleaned_data2 %>% 
+  pivot_longer(
+    cols = starts_with("exp_"),
+    names_to = "explanatory",
+    values_to = "explanatory_value"
+) %>% 
+filter(!is.na(explanatory_value)) %>%
+  pivot_longer(
+    cols = starts_with("resp_"), 
+    names_to = "response", 
+    values_to = "response_value"
+)
+
+covid_survey_longer
+```
+
+###2.5
+
+```{r}
+
+covid_survey_summary_stats_by_group <- covid_survey_longer %>%
+  group_by(explanatory, explanatory_value, response) %>%
+  summarize(
+    mean = mean(response_value, na.rm = TRUE),
+    low = quantile(response_value, 0.10, na.rm = TRUE),
+    high = quantile(response_value, 0.90, na.rm = TRUE)
+  )
+
+covid_survey_summary_stats_by_group
+
+```
+###2.6
+
+```{r}
+covid_survey_summary_stats_all <- covid_survey_longer %>%
+  group_by(response) %>%
+  summarize(
+    mean = mean(response_value, na.rm = TRUE),
+    low = quantile(response_value, 0.10, na.rm = TRUE),
+    high = quantile(response_value, 0.90, na.rm = TRUE)
+  )
+
+covid_survey_summary_stats_all
+
+```
+
+
+###2.7
+
+```{r}
+covid_survey_summary_stats <- bind_rows(covid_survey_summary_stats_all, covid_survey_summary_stats_by_group)
+
+covid_survey_summary_stats
+
+```
+
+###2.8
+
+
+```{r}
+# Plot the faceted graph with rotated x-axis
+ggplot(covid_survey_summary_stats_all, aes(x = response, y = mean)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = low, ymax = high), width = 0.2) +
+  facet_wrap(~ response, scales = "free", ncol = 2) +
+  labs(x = "Response Variable", y = "Mean Response Value", title = "Summary Statistics by Response Variable") +
+  coord_flip()
+
+```
+```{r fig.width=10, fig.height=15}
+
+covid_survey_summary_stats %>%
+  mutate(explanatory = case_when(
+    explanatory == "exp_age_bin" ~ "Age",
+    explanatory == "exp_gender" ~ "Gender",
+    explanatory == "exp_race" ~ "Race",
+    explanatory == "exp_ethnicity" ~ "Ethnicity",
+    explanatory == "exp_profession" ~ "Profession",
+    explanatory == "exp_already_vax" ~ "Had COVID vaccine",
+    explanatory == "exp_flu_vax" ~ "Had flu vaccine this year",
+    is.na(explanatory) ~ "All"
+  ), 
+  response = case_when(
+    response == "resp_safety" ~ "Based on my understanding, I believe the vaccine is safe",
+    response == "resp_feel_safe_at_work" ~ "Getting the vaccine will make me feel safer at work",
+    response == "resp_concern_safety" ~ "I am concerned about the safety and side effects of the vaccine",
+    response == "resp_confidence_science" ~ "I am confident in the scientific vetting process for the new COVID vaccines",
+    response == "resp_trust_info" ~ "I trust the information that I have received about the vaccines",
+    response == "resp_will_recommend" ~ "I will recommend the vaccine to family, friends, and community members"
+  ), 
+  explanatory_value = case_when(
+    is.na(explanatory_value) ~ "All",
+    TRUE ~ explanatory_value
+  )
+) %>%
+ggplot(aes(x = mean, y = explanatory_value, xmin = low, xmax = high)) +
+  geom_point() +
+  geom_errorbar(aes(xmin = low, xmax = high)) +
+  facet_grid(explanatory ~ response, scales = "free", labeller = labeller(explanatory = label_wrap_gen(15), response = label_wrap_gen(12))) +
+  labs(x = "Mean Likert Score", y = NULL) +
+  theme_bw() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(fill = "gray90", color = "gray"),
+    strip.text = element_text(face = "bold", size = 8),
+    axis.text.x = element_text(size = 8),
+    legend.position = "none",
+    plot.background = element_rect(fill = "white"),  # Set plot background to white
+    plot.margin = margin(1, 1, 1, 1, "cm")  # Set margin to create space around the plot
+  )
+
+```
+
