@@ -1,6 +1,6 @@
 ---
 title: "Lab 5"
-#author: "Insert Name"
+author: "Cameron Adams"
 date: "Math 241, Week 6"
 output:
   pdf_document
@@ -20,6 +20,10 @@ library(tidyverse)
 library(rnoaa)
 library(rvest)
 library(httr)
+library(lubridate)
+library(ggplot2)
+
+
 ```
 
 
@@ -50,7 +54,7 @@ library(rnoaa)
 a. First things first, go to [this NOAA website](https://www.ncdc.noaa.gov/cdo-web/token) to get a key emailed to you.  Then insert your key below:
 
 ```{r, eval = FALSE}
-options(noaakey = "INSERT KEY")
+options(noaakey = "CGQTSwiBqLCzPVhxvWGVLyHcRdXPIZsm")
 ```
 
 
@@ -64,29 +68,69 @@ stations <- ncdc_stations(datasetid = "GHCND",
 mult_stations <- stations$data
 ```
 
+There are 24 stations in Multnomah County!
 
 
 c. January was not so rainy this year, was it?  Let's grab the precipitation data for site `GHCND:US1ORMT0006` for this past January.
-
-```{r, eval = FALSE}
+change start data to 2024-01-01 end date end of the month.
+GHCND:US1ORMT0006
+```{r}
 # First fill-in and run to following to determine the
 # datatypeid
 ncdc_datatypes(datasetid = "GHCND",
-               stationid = "")
+               stationid = "GHCND:US1ORMT0006")
 
-# Now grab the data using ncdc()
-precip_se_pdx <- ncdc()
+
+# Now grab the data using ncdc() and explicitly specify the date column
+precip_se_pdx <- ncdc(datasetid = "GHCND",
+                      stationid = "GHCND:US1ORMT0006",
+                      datatypeid = "PRCP",
+                      startdate = "2024-01-01",
+                      enddate = "2024-01-31",
+                      var = c("date", "datatype", "value"))
+
+
 ```
+
+
 
 d.  What is the class of `precip_se_dpx`?  Grab the data frame nested in `precip_se_dpx` and call it `precip_se_dpx_data`.
 
+```{r}
+class(precip_se_pdx)
+
+# Extract the data frame nested in precip_se_pdx
+precip_se_pdx_data <- precip_se_pdx$data
+
+```
 
 
 e. Use `ymd_hms()` in the package `lubridate` to wrangle the date column into the correct format.
 
 
+```{r}
+
+# Convert the date column to the correct format
+precip_se_pdx_data$date <- ymd_hms(precip_se_pdx_data$date)
+
+```
 
 f. Plot the precipitation data for this site in Portland over time.  Rumor has it that we had only one day where it didn't rain.  Is that true?
+
+
+```{r}
+# Load the ggplot2 package
+library(ggplot2)
+
+# Plot the precipitation data over time
+ggplot(precip_se_pdx_data, aes(x = date, y = value)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(x = "Date", y = "Precipitation (mm)", title = "Precipitation in Portland (Jan 2024)")
+
+```
+From this plot we can see that it actually didn't rain on at least 3 different days, maybe 5 in total.
+
+
 
 
 g. (Bonus) Adapt the code to create a visualization that compares the precipitation data for January over the the last four years.  Do you notice any trend over time?

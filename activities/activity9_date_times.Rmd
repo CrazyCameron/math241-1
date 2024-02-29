@@ -21,29 +21,56 @@ The goal of this exercise is to use our skills to get data from online, transfor
 * Get the data about rides in January, July, and November of 2017, and **bind** them into a single data frame using `bind_rows`:
 
 (Hint: use the `readr::read_csv` function to directly read the csv from the url pointing to the data)
-```{r, eval = F}
 
-biketown_data <- bind_rows(bk_jan, bk_jul, bk_nov) %>%
+```{r}
+
+janBike <- "https://s3.amazonaws.com/biketown-tripdata-public/2017_01.csv"
+julyBike <- "https://s3.amazonaws.com/biketown-tripdata-public/2017_07.csv"
+Novbike <- "https://s3.amazonaws.com/biketown-tripdata-public/2017_11.csv"
+
+JanData <- readr::read_csv(janBike) 
+
+JulData <- readr::read_csv(julyBike) 
+
+NovData <- readr::read_csv(Novbike) 
+
+biketown_data <- bind_rows(JanData,JulData, NovData )
+
+
+
+biketown_data <- biketown_data %>%
   select(StartDate, StartTime, EndDate, EndTime, Distance_Miles,
          BikeID)
+
+glimpse(biketown_data)
+
+
 ```
+
 
 ### Question 2:
 
 * Reproduce the plot provided in the PDF version of this activity, using the `lubridate` functions(`mdy`, `ymd_hms`, `wday`, `month`):
 
+```{r}
+mutate(StartDate = mdy(StartDate),
+         EndDate = mdy(EndDate)) %>%
+  mutate(StartDateTime = ymd_hms(paste(StartDate, StartTime, sep = " ")),
+         EndDateTime = ymd_hms(paste(EndDate, EndTime, sep = " "))) %>%
+  filter(Distance_Miles < 10) # filter for outlying trips!
+```
+
 ```{r, eval = F, fig.width = 12, fig.height = 8}
 
-biketown_dt <- biketown_data %>%
-  mutate()%>%
-  filter(Distance_Miles < 10) # filter for outlying trips!
-
 biketown_dt %>%
-  ggplot(aes(y =..., x = Distance_Miles, fill = ...)) +
+  mutate(day_of_week = wday(StartDateTime, label = TRUE),
+         month = month(StartDateTime, label = TRUE)) %>%
+  group_by(day_of_week, month) %>%
+  ggplot(aes(y = day_of_week, x = Distance_Miles, fill = factor(day_of_week))) +
   geom_density_ridges(scale = 4) +
-  facet_wrap(~ ..., nrow = 3) +
+  facet_wrap(~ month, nrow = 3) +
   labs(x = 'Distance (Miles)', y = 'Day of the week') +
   theme_ridges() +
   theme(legend.position = 'none')
-  
+
 ```
