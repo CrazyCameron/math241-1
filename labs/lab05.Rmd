@@ -136,6 +136,37 @@ From this plot we can see that it actually didn't rain on at least 3 different d
 g. (Bonus) Adapt the code to create a visualization that compares the precipitation data for January over the the last four years.  Do you notice any trend over time?
 
 
+```{r}
+# Load the rnoaa package
+library(rnoaa)
+
+# Fetch precipitation data for January of the past four years
+start_dates <- c("2021-01-01", "2022-01-01", "2023-01-01", "2024-01-01")
+end_dates <- c("2021-01-31", "2022-01-31", "2023-01-31", "2024-01-31")
+
+precip_data <- lapply(1:4, function(i) {
+  ncdc(datasetid = "GHCND",
+       stationid = "GHCND:US1ORMT0006",
+       datatypeid = "PRCP",
+       startdate = start_dates[i],
+       enddate = end_dates[i])$data
+})
+
+# Bind the data frames together
+all_precip_data <- do.call(rbind, precip_data)
+
+# Convert date column to date format
+all_precip_data$date <- as.Date(all_precip_data$date)
+
+# Plot precipitation data over time for the past four years with distinct graphs for each year
+ggplot(all_precip_data, aes(x = date, y = value, color = factor(year(date)))) +
+  geom_line() +
+  labs(x = "Date", y = "Precipitation (mm)", title = "Precipitation in Portland (January, 2021-2024)") +
+  facet_grid(year(date) ~ ., scales = "free_y") +
+  scale_color_manual(values = c("blue", "red", "green", "orange"))
+
+
+```
 
 
 ## Problem 2: From API to R 
@@ -152,6 +183,30 @@ Here are some potential API wrapper packages.  Feel free to use one not included
 * [`rfishbase`](https://github.com/ropensci/rfishbase): For the fish lovers
 * [`darksky`](https://github.com/hrbrmstr/darksky): For global historical and current weather conditions
 
+```{r}
+# Install the darksky package
+install.packages("darksky")
+
+# Load the required libraries
+library(darksky)
+
+```
+
+```{r}
+# Set your Dark Sky API key (replace "YOUR_API_KEY" with your actual API key)
+darksky_api_key <- "YOUR_API_KEY"
+
+# Fetch historical temperature data for New York City for the past year
+nyc_weather <- get_forecast_for(
+  key = darksky_api_key,
+  lat = 40.7128,
+  lon = -74.0060,
+  start_date = Sys.Date() - 365,
+  end_date = Sys.Date(),
+  verbose = TRUE
+)
+
+```
 
 
 ## Problem 3: Scraping Reedie Data
@@ -160,15 +215,37 @@ Let's see what lovely data we can pull from Reed's own website.
 
 a. Go to [https://www.reed.edu/ir/success.html](https://www.reed.edu/ir/success.html) and scrape the two tables.
 
+```{r}
+url <- "https://www.reed.edu/ir/success.html"
+page <- read_html(url)
+```
+
 
 
 
 b. Grab and print out the table that is entitled "GRADUATE SCHOOLS MOST FREQUENTLY ATTENDED BY REED ALUMNI".  Why is this data frame not in a tidy format?
 
+```{r}
+graduate_schools_table <- page %>% html_table() %>% .[[2]]
+print(graduate_schools_table)
+```
+
+
 
 
 c. Wrangle the data into a tidy format. Glimpse the resulting data frame.
 
+
+```{r}
+graduate_schools_tidy <- graduate_schools_table %>%
+  as_tibble() %>%
+  rename(
+    School = 1,
+    Frequency = 2
+  )
+
+head(graduate_schools_tidy)
+```
 
 
 d. Now grab the "OCCUPATIONAL DISTRIBUTION OF ALUMNI" table and turn it into an appropriate graph.  What conclusions can we draw from the graph?
@@ -177,6 +254,35 @@ d. Now grab the "OCCUPATIONAL DISTRIBUTION OF ALUMNI" table and turn it into an 
 # Hint: Use `parse_number()` within `mutate()` to fix one of the columns
 ```
 
+
+```{r}
+occupational_distribution_table <- page %>% html_table() %>% .[[1]]
+
+# Assuming you have already scraped the occupational distribution table and stored it in occupational_distribution_table
+
+# Renaming the columns to match the actual column names in the data
+colnames(occupational_distribution_table) <- c("Occupation", "Percentage Employed")
+
+# Wrangling the data into tidy format and parsing the percentage column
+occupational_distribution_tidy <- occupational_distribution_table %>%
+  as_tibble() %>%
+  mutate(
+    Percentage = parse_number(`Percentage Employed`)
+  ) %>%
+  select(Occupation, Percentage)
+
+# Creating the graph
+occupational_plot <- ggplot(occupational_distribution_tidy, aes(x = Occupation, y = Percentage)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Occupational Distribution of Reed Alumni",
+       x = "Occupation",
+       y = "Percentage Employed") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+# Print the graph
+print(occupational_plot)
+
+```
 
 
 
@@ -207,5 +313,48 @@ filter(row_number() ...)
 
 * Make sure each column has the correct class.    
 
+```{r}
+
+# Define the URL for graduation rates data
+grad_rates_url <- "https://www.reed.edu/ir/gradrateshist.html"
+
+# Read the HTML content
+page <- read_html(grad_rates_url)
+
+# Extract the table
+grad_rates_table <- page %>% html_table(fill = TRUE) %>% .[[1]]
+
+print(grad_rates_table)
+
+```
+
+```{r}
+
+
+
+grad_rates_clean <- grad_rates_table %>%
+  mutate(across(starts_with("Graduated"), ~ as.numeric(gsub("[^0-9.]", "", .)))) %>%  # Extract numeric values
+  pivot_longer(cols = starts_with("Graduated"),
+               names_to = "Years",
+               values_to = "Graduation rate")
+
+# Print a glimpse of the clean data
+glimpse(grad_rates_clean)
+
+
+```
+
 
 f. Create a graph comparing the graduation rates over time and draw some conclusions.
+
+```{r}
+ ggplot(grad_rates_clean, aes(x = `Entering class year`, y = `Graduation rate`, color = Years)) +
+  geom_line() +
+  labs(title = "Graduation Rates Over Time at Reed College",
+       x = "Entering Class Year",
+       y = "Graduation Rate",
+       color = "Years to Graduation") +
+  theme_minimal()
+
+```
+
