@@ -3,7 +3,8 @@ title: "Lab 5"
 author: "Cameron Adams"
 date: "Math 241, Week 6"
 output:
-  pdf_document
+  pdf_document:
+   
 urlcolor: blue
 ---
 
@@ -54,7 +55,7 @@ library(rnoaa)
 a. First things first, go to [this NOAA website](https://www.ncdc.noaa.gov/cdo-web/token) to get a key emailed to you.  Then insert your key below:
 
 ```{r, eval = FALSE}
-options(noaakey = "CGQTSwiBqLCzPVhxvWGVLyHcRdXPIZsm")
+options(noaakey = "IGFTMJiYFRcmoLFPAvUiycwHFSzkdVlh")
 ```
 
 
@@ -62,10 +63,12 @@ options(noaakey = "CGQTSwiBqLCzPVhxvWGVLyHcRdXPIZsm")
 b. From the National Climate Data Center (NCDC) data, use the following code to grab the stations in Multnomah County. How many stations are in Multnomah County?
 
 ```{r, eval = FALSE}
-stations <- ncdc_stations(datasetid = "GHCND", 
+library(rnoaa)
+
+# stations <- ncdc_stations(datasetid = "GHCND", 
                           locationid = "FIPS:41051")
 
-mult_stations <- stations$data
+# mult_stations <- stations$data
 ```
 
 There are 24 stations in Multnomah County!
@@ -74,33 +77,56 @@ There are 24 stations in Multnomah County!
 c. January was not so rainy this year, was it?  Let's grab the precipitation data for site `GHCND:US1ORMT0006` for this past January.
 change start data to 2024-01-01 end date end of the month.
 GHCND:US1ORMT0006
+
+### This was working fine but now im getting this error when I try to knit: 
+Quitting from lines 78-92 [unnamed-chunk-5] (lab05.Rmd)
+Error in `getOption()`:
+! need an API key for NOAA data
+Backtrace:
+ 1. rnoaa::ncdc_datatypes(datasetid = "GHCND", stationid = "GHCND:US1ORMT0006")
+ 2. rnoaa:::check_key(token)
+ 3. base::getOption("noaakey", stop("need an API key for NOAA data"))
+Execution halted
+
+### And since it is 2 am im just trying to submit
+                                                                                                             
+
+Quitting from lines 78-92 [unnamed-chunk-5] (lab05.Rmd)
+Error in `getOption()`:
+! need an API key for NOAA data
+Backtrace:
+ 1. rnoaa::ncdc_datatypes(datasetid = "GHCND", stationid = "GHCND:US1ORMT0006")
+ 2. rnoaa:::check_key(token)
+ 3. base::getOption("noaakey", stop("need an API key for NOAA data"))
+Execution halted
+
+
 ```{r}
-# First fill-in and run to following to determine the
-# datatypeid
-ncdc_datatypes(datasetid = "GHCND",
-               stationid = "GHCND:US1ORMT0006")
 
 
-# Now grab the data using ncdc() and explicitly specify the date column
-precip_se_pdx <- ncdc(datasetid = "GHCND",
-                      stationid = "GHCND:US1ORMT0006",
-                      datatypeid = "PRCP",
-                      startdate = "2024-01-01",
-                      enddate = "2024-01-31",
-                      var = c("date", "datatype", "value"))
+#ncdc_datatypes(datasetid = "GHCND",
+###               stationid = "GHCND:US1ORMT0006")
+
+
+#precip_se_pdx <- ncdc(datasetid = "GHCND",
+  #                    stationid = "GHCND:US1ORMT0006",
+  #                    datatypeid = "PRCP",
+  #                    startdate = "2024-01-01",
+  #                    enddate = "2024-01-31",
+  #                    var = c("date", "datatype", "value"))
 
 
 ```
+#
 
 
 
 d.  What is the class of `precip_se_dpx`?  Grab the data frame nested in `precip_se_dpx` and call it `precip_se_dpx_data`.
 
 ```{r}
-class(precip_se_pdx)
+#class(precip_se_pdx)
 
-# Extract the data frame nested in precip_se_pdx
-precip_se_pdx_data <- precip_se_pdx$data
+#precip_se_pdx_data <- precip_se_pdx$data
 
 ```
 
@@ -111,7 +137,7 @@ e. Use `ymd_hms()` in the package `lubridate` to wrangle the date column into th
 ```{r}
 
 # Convert the date column to the correct format
-precip_se_pdx_data$date <- ymd_hms(precip_se_pdx_data$date)
+#precip_se_pdx_data$date <- ymd_hms(precip_se_pdx_data$date)
 
 ```
 
@@ -119,13 +145,10 @@ f. Plot the precipitation data for this site in Portland over time.  Rumor has i
 
 
 ```{r}
-# Load the ggplot2 package
-library(ggplot2)
 
-# Plot the precipitation data over time
-ggplot(precip_se_pdx_data, aes(x = date, y = value)) +
-  geom_bar(stat = "identity", fill = "blue") +
-  labs(x = "Date", y = "Precipitation (mm)", title = "Precipitation in Portland (Jan 2024)")
+#ggplot(precip_se_pdx_data, aes(x = date, y = value)) +
+ # geom_bar(stat = "identity", fill = "blue") +
+ # labs(x = "Date", y = "Precipitation (mm)", title = "Precipitation in Portland (Jan 2024)")
 
 ```
 From this plot we can see that it actually didn't rain on at least 3 different days, maybe 5 in total.
@@ -137,37 +160,32 @@ g. (Bonus) Adapt the code to create a visualization that compares the precipitat
 
 
 ```{r}
-# Load the rnoaa package
-library(rnoaa)
 
-# Fetch precipitation data for January of the past four years
-start_dates <- c("2021-01-01", "2022-01-01", "2023-01-01", "2024-01-01")
-end_dates <- c("2021-01-31", "2022-01-31", "2023-01-31", "2024-01-31")
 
-precip_data <- lapply(1:4, function(i) {
-  ncdc(datasetid = "GHCND",
-       stationid = "GHCND:US1ORMT0006",
-       datatypeid = "PRCP",
-       startdate = start_dates[i],
-       enddate = end_dates[i])$data
-})
+#start_dates <- c("2021-01-01", "2022-01-01", "2023-01-01", "2024-01-01")
+#end_dates <- c("2021-01-31", "2022-01-31", "2023-01-31", "2024-01-31")
 
-# Bind the data frames together
-all_precip_data <- do.call(rbind, precip_data)
+#precip_data <- lapply(1:4, function(i) {
+#  ncdc(datasetid = "GHCND",
+ #      stationid = "GHCND:US1ORMT0006",
+ #      datatypeid = "PRCP",
+ #      startdate = start_dates[i],
+   ##    enddate = end_dates[i])$data
+#})
 
-# Convert date column to date format
-all_precip_data$date <- as.Date(all_precip_data$date)
+#all_precip_data <- do.call(rbind, precip_data)
 
-# Plot precipitation data over time for the past four years with distinct graphs for each year
-ggplot(all_precip_data, aes(x = date, y = value, color = factor(year(date)))) +
-  geom_line() +
-  labs(x = "Date", y = "Precipitation (mm)", title = "Precipitation in Portland (January, 2021-2024)") +
-  facet_grid(year(date) ~ ., scales = "free_y") +
-  scale_color_manual(values = c("blue", "red", "green", "orange"))
+#all_precip_data$date <- as.Date(all_precip_data$date)
+
+#ggplot(all_precip_data, aes(x = date, y = value, color = factor(year(date)))) +
+#  geom_line() +
+#  labs(x = "Date", y = "Precipitation (mm)", title = "Precipitation in Portland (January, 2021-2024)") +
+#  facet_grid(year(date) ~ ., scales = "free_y") +
+#  scale_color_manual(values = c("blue", "red", "green", "orange"))
 
 
 ```
-
+Its not a very good graph but it seems that the weather has been getting worse each year with more rainfall in 2024 than every year before and 2022 and 2021 seming not too bad
 
 ## Problem 2: From API to R 
 
@@ -183,28 +201,24 @@ Here are some potential API wrapper packages.  Feel free to use one not included
 * [`rfishbase`](https://github.com/ropensci/rfishbase): For the fish lovers
 * [`darksky`](https://github.com/hrbrmstr/darksky): For global historical and current weather conditions
 
-```{r}
-# Install the darksky package
-install.packages("darksky")
+###I am sorry I didn't really get to do this part rip
 
-# Load the required libraries
-library(darksky)
+```{r}
+
+
+#install.packages("rfishbase")
+library(rfishbase)
 
 ```
-
 ```{r}
-# Set your Dark Sky API key (replace "YOUR_API_KEY" with your actual API key)
-darksky_api_key <- "YOUR_API_KEY"
+fish_data <- species()
+str(fish_data)
 
-# Fetch historical temperature data for New York City for the past year
-nyc_weather <- get_forecast_for(
-  key = darksky_api_key,
-  lat = 40.7128,
-  lon = -74.0060,
-  start_date = Sys.Date() - 365,
-  end_date = Sys.Date(),
-  verbose = TRUE
-)
+```
+```{r}
+max_length <- fish_data$max_length_cm
+
+summary(max_length)
 
 ```
 
@@ -250,20 +264,12 @@ head(graduate_schools_tidy)
 
 d. Now grab the "OCCUPATIONAL DISTRIBUTION OF ALUMNI" table and turn it into an appropriate graph.  What conclusions can we draw from the graph?
 
-```{r}
-# Hint: Use `parse_number()` within `mutate()` to fix one of the columns
-```
-
 
 ```{r}
 occupational_distribution_table <- page %>% html_table() %>% .[[1]]
 
-# Assuming you have already scraped the occupational distribution table and stored it in occupational_distribution_table
-
-# Renaming the columns to match the actual column names in the data
 colnames(occupational_distribution_table) <- c("Occupation", "Percentage Employed")
 
-# Wrangling the data into tidy format and parsing the percentage column
 occupational_distribution_tidy <- occupational_distribution_table %>%
   as_tibble() %>%
   mutate(
@@ -271,21 +277,19 @@ occupational_distribution_tidy <- occupational_distribution_table %>%
   ) %>%
   select(Occupation, Percentage)
 
-# Creating the graph
-occupational_plot <- ggplot(occupational_distribution_tidy, aes(x = Occupation, y = Percentage)) +
+ggplot(occupational_distribution_tidy, aes(x = Occupation, y = Percentage)) +
   geom_bar(stat = "identity", fill = "skyblue") +
   labs(title = "Occupational Distribution of Reed Alumni",
        x = "Occupation",
        y = "Percentage Employed") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
-# Print the graph
-print(occupational_plot)
 
 ```
+WE can see that business and indusrty, education and self-employed are the main occupations of reed alumni with very few going into community service
 
 
-
+#got Errors here and below so not commplete
 
 e. Let's now grab the Reed graduation rates over time.  Grab the data from [here](https://www.reed.edu/ir/gradrateshist.html).
 
@@ -324,6 +328,8 @@ page <- read_html(grad_rates_url)
 # Extract the table
 grad_rates_table <- page %>% html_table(fill = TRUE) %>% .[[1]]
 
+
+
 print(grad_rates_table)
 
 ```
@@ -332,14 +338,14 @@ print(grad_rates_table)
 
 
 
-grad_rates_clean <- grad_rates_table %>%
-  mutate(across(starts_with("Graduated"), ~ as.numeric(gsub("[^0-9.]", "", .)))) %>%  # Extract numeric values
-  pivot_longer(cols = starts_with("Graduated"),
-               names_to = "Years",
-               values_to = "Graduation rate")
+#grad_rates_clean <- grad_rates_table %>%
+ #
+#mutate(across(starts_with("Graduated"), ~ as.numeric(gsub("[^0-9.]", "", .)))) %>%  # Extract numeric values
+ # pivot_longer(cols = starts_with("Graduated"),
+  #             names_to = "Years",
+  #             values_to = "Graduation rate")
 
-# Print a glimpse of the clean data
-glimpse(grad_rates_clean)
+#glimpse(grad_rates_clean)
 
 
 ```
@@ -348,13 +354,13 @@ glimpse(grad_rates_clean)
 f. Create a graph comparing the graduation rates over time and draw some conclusions.
 
 ```{r}
- ggplot(grad_rates_clean, aes(x = `Entering class year`, y = `Graduation rate`, color = Years)) +
-  geom_line() +
-  labs(title = "Graduation Rates Over Time at Reed College",
-       x = "Entering Class Year",
-       y = "Graduation Rate",
-       color = "Years to Graduation") +
-  theme_minimal()
+ #ggplot(grad_rates_clean, aes(x = `Entering class year`, y = `Graduation rate`, color = Years)) +
+ # geom_line() +
+ # labs(title = "Graduation Rates Over Time at Reed College",
+ #      x = "Entering Class Year",
+ #      y = "Graduation Rate",
+ #      color = "Years to Graduation") +
+ # theme_minimal()
 
 ```
 
