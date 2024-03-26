@@ -37,10 +37,13 @@ biketown_data <- bind_rows(readr::read_csv("https://s3.amazonaws.com/biketown-tr
                            readr::read_csv("https://s3.amazonaws.com/biketown-tripdata-public/2017_07.csv"),
                            readr::read_csv("https://s3.amazonaws.com/biketown-tripdata-public/2017_11.csv")) %>%
   
+
   select(StartDate, StartTime, EndDate, EndTime, Distance_Miles,
          BikeID)
 
-  
+  # Check for parsing problems
+problems(biketown_data)
+
 ```
 
 ### Question 2:
